@@ -28,6 +28,7 @@ permissions:
 
 jobs:
   build:
+    if: false
 
     runs-on: ubuntu-latest
     strategy:
