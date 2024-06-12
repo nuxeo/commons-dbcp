@@ -15,7 +15,13 @@
 
 name: Coverage
 
-on: [push, pull_request]
+on:
+  workflow_dispatch: #Allows to run workflow manually
+  push:
+    branches:
+    - master
+    - 'DBCP_2_**'
+  pull_request:
 
 permissions:
   contents: read
