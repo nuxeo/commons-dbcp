@@ -212,7 +212,7 @@ public class LocalXAConnectionFactory implements XAConnectionFactory {
         }
 
         /**
-         * Always returns a zero length Xid array. The LocalXAConnectionFactory can not support recovery, so no xids
+         * Always returns a zero length Xid array. The LocalXAConnectionFactory cannot support recovery, so no xids
          * will ever be found.
          *
          * @param flag
@@ -369,6 +369,8 @@ public class LocalXAConnectionFactory implements XAConnectionFactory {
     }
 
     /**
+     * Gets the connection factory.
+     *
      * @return The connection factory.
      * @since 2.6.0
      */
@@ -376,6 +378,11 @@ public class LocalXAConnectionFactory implements XAConnectionFactory {
         return connectionFactory;
     }
 
+    /**
+     * Gets the transaction registry.
+     *
+     * @return The transaction registry.
+     */
     @Override
     public TransactionRegistry getTransactionRegistry() {
         return transactionRegistry;

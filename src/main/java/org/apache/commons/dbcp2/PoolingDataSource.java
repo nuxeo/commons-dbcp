@@ -164,7 +164,6 @@ public class PoolingDataSource<C extends Connection> implements DataSource, Auto
         throw new UnsupportedOperationException();
     }
 
-    // --- DataSource methods -----------------------------------------
 
     /**
      * Throws {@link UnsupportedOperationException}.
@@ -193,6 +192,11 @@ public class PoolingDataSource<C extends Connection> implements DataSource, Auto
         throw new SQLFeatureNotSupportedException();
     }
 
+    /**
+     * Gets the backing object pool.
+     *
+     * @return the backing object pool.
+     */
     protected ObjectPool<C> getPool() {
         return pool;
     }

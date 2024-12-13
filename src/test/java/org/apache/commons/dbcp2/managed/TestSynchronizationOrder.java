@@ -18,6 +18,7 @@
 package org.apache.commons.dbcp2.managed;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationHandler;
@@ -134,15 +135,16 @@ public class TestSynchronizationOrder {
             public Object invoke(final Object proxy, final Method method, final Object[] args)
                     throws Throwable {
                 final String methodName = method.getName();
-                if (methodName.equals("hashCode")) {
+                switch (methodName) {
+                case "hashCode":
                     return System.identityHashCode(proxy);
-                }
-                if (methodName.equals("equals")) {
+                case "equals":
                     return proxy == args[0];
-                }
-                if (methodName.equals("getXAConnection")) {
+                case "getXAConnection":
                     // both zero and 2-arg signatures
                     return getXAConnection();
+                default:
+                    break;
                 }
                 try {
                     return method.invoke(bds, args);
@@ -188,7 +190,7 @@ public class TestSynchronizationOrder {
                 transactionManager.begin();
                 try (final Connection connectionA = ds.getConnection()) {
                     // Check and close right away.
-                    assertTrue(connectionA instanceof DelegatingConnection);
+                    assertInstanceOf(DelegatingConnection.class, connectionA);
                 }
                 transactionManager.commit();
                 assertFalse(transactionManagerRegistered);
@@ -221,7 +223,7 @@ public class TestSynchronizationOrder {
                 transactionManager.begin();
                 try (final Connection connectionA = ds.getConnection()) {
                     // Check and close right away.
-                    assertTrue(connectionA instanceof DelegatingConnection);
+                    assertInstanceOf(DelegatingConnection.class, connectionA);
                 }
                 transactionManager.commit();
                 assertTrue(transactionManagerRegistered);

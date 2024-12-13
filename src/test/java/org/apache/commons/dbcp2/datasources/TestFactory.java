@@ -29,20 +29,53 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
+ * Tests SharedPoolDataSourceFactory.
  */
 public class TestFactory {
 
-    // Bugzilla Bug 24082: bug in InstanceKeyDataSourceFactory
-    // There's a fatal bug in InstanceKeyDataSourceFactory that means you can't
-    // instantiate more than one factory.
-    // https://issues.apache.org/bugzilla/show_bug.cgi?id=24082
-    @Test
-    public void testJNDI2Pools() throws Exception {
+    /**
+     * Tests Bugzilla Bug 24082: bug in InstanceKeyDataSourceFactory.
+     *
+     * There's a fatal bug in InstanceKeyDataSourceFactory that means you can't instantiate more than one factory.
+     * https://issues.apache.org/bugzilla/show_bug.cgi?id=24082
+     */
+    @ParameterizedTest
+    // @formatter:off
+    @CsvSource({
+        "dataSourceName,                 java:comp/env/jdbc/bookstoreCPDS",
+        "description,                    This is a test.",
+        "jndiEnvironment,                X",
+        "loginTimeout,                   30000",
+        "blockWhenExhausted,             false",
+        "evictionPolicyClassName,        org.apache.commons.pool2.impl.DefaultEvictionPolicy",
+        "lifo,                           true",
+        "maxIdlePerKey,                  4",
+        "maxTotalPerKey,                 4",
+        "maxWaitMillis,                  30001",
+        "minEvictableIdleTimeMillis,     30002",
+        "minIdlePerKey,                  4",
+        "numTestsPerEvictionRun,         2",
+        "softMinEvictableIdleTimeMillis, 30003",
+        "testOnCreate,                   true",
+        "testOnBorrow,                   true",
+        "testOnReturn,                   true",
+        "testWhileIdle,                  true",
+        "timeBetweenEvictionRunsMillis,  30004",
+        "validationQuery,                select 1",
+        "validationQueryTimeout,         30005",
+        "rollbackAfterValidation,        false",
+        "maxConnLifetimeMillis,          60000",
+        "defaultAutoCommit,              true",
+        "defaultTransactionIsolation,    X",
+        "defaultReadOnly,                true" })
+    // @formatter:on
+    public void testJNDI2Pools(final String string, final String value) throws Exception {
         final Reference refObj = new Reference(SharedPoolDataSource.class.getName());
-        refObj.add(new StringRefAddr("dataSourceName","java:comp/env/jdbc/bookstoreCPDS"));
+        refObj.add(new StringRefAddr(string, value));
         final Context context = new InitialContext();
         final Hashtable<?, ?> env = new Hashtable<>();
 

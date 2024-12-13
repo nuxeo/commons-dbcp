@@ -14,22 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.commons.dbcp2.managed;
+
+package org.apache.commons.dbcp2;
+
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
- * A listener for transaction completion events.
- *
- * @since 2.0
+ * Abstracts testing a JDBC driver.
  */
-public interface TransactionContextListener {
+public abstract class AbstractDriverTest {
 
-    /**
-     * Called after a transaction commits or rolls back.
-     *
-     * @param transactionContext
-     *            the transaction context that completed.
-     * @param committed
-     *            true if the transaction committed; false otherwise.
-     */
-    void afterCompletion(TransactionContext transactionContext, boolean committed);
+    //private static final String KEY_JDBC_DRIVERS = "jdbc.drivers";
+
+    @AfterAll
+    public static void afterClass() throws SQLException {
+        //System.clearProperty(KEY_JDBC_DRIVERS);
+        DriverManager.deregisterDriver(TesterDriver.INSTANCE);
+    }
+
+    @BeforeAll
+    public static void beforeClass() throws SQLException {
+        //System.setProperty(KEY_JDBC_DRIVERS, "org.apache.commons.dbcp2.TesterDriver");
+        DriverManager.registerDriver(TesterDriver.INSTANCE);
+    }
+
 }

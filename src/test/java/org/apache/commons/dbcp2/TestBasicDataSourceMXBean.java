@@ -79,6 +79,11 @@ public class TestBasicDataSourceMXBean {
         }
 
         @Override
+        public String[] getDisconnectionIgnoreSqlCodesAsArray() {
+            return null;
+        }
+
+        @Override
         public String[] getDisconnectionSqlCodesAsArray() {
             return null;
         }

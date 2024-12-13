@@ -17,9 +17,9 @@
 
 package org.apache.commons.dbcp2;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +48,6 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.sql.DataSource;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,7 +111,7 @@ public class TestBasicDataSource extends TestConnectionPool {
             dconn = ((DelegatingConnection<?>) conn).getInnermostDelegate();
             assertNotNull(dconn);
 
-            assertTrue(dconn instanceof TesterConnection);
+            assertInstanceOf(TesterConnection.class, dconn);
         }
     }
 
@@ -439,6 +439,21 @@ public class TestBasicDataSource extends TestConnectionPool {
         }
     }
 
+    @Test
+    public void testDisconnectionIgnoreSqlCodes() throws Exception {
+        final ArrayList<String> disconnectionIgnoreSqlCodes = new ArrayList<>();
+        disconnectionIgnoreSqlCodes.add("XXXX");
+        ds.setDisconnectionIgnoreSqlCodes(disconnectionIgnoreSqlCodes);
+        ds.setFastFailValidation(true);
+        try (Connection conn = ds.getConnection()) { // Triggers initialization - pcf creation
+            // Make sure factory got the properties
+            final PoolableConnectionFactory pcf = (PoolableConnectionFactory) ds.getConnectionPool().getFactory();
+            assertTrue(pcf.isFastFailValidation());
+            assertTrue(pcf.getDisconnectionIgnoreSqlCodes().contains("XXXX"));
+            assertEquals(1, pcf.getDisconnectionIgnoreSqlCodes().size());
+        }
+    }
+
     /**
      * JIRA: DBCP-437
      * Verify that BasicDataSource sets disconnect codes properties.
@@ -468,7 +483,7 @@ public class TestBasicDataSource extends TestConnectionPool {
         try (Connection conn = getConnection()) {
             final ClassLoader cl = ds.getDriverClassLoader();
             assertNotNull(cl);
-            assertTrue(cl instanceof TesterClassLoader);
+            assertInstanceOf(TesterClassLoader.class, cl);
             assertTrue(((TesterClassLoader) cl).didLoad(ds.getDriverClassName()));
         }
     }
@@ -560,8 +575,7 @@ public class TestBasicDataSource extends TestConnectionPool {
         }
         StackMessageLog.clear();
         ds.close();
-        assertThat(StackMessageLog.popMessage(),
-                CoreMatchers.not(CoreMatchers.containsString("InstanceNotFoundException")));
+        assertNull(StackMessageLog.popMessage());
         assertNull(ds.getRegisteredJmxName());
     }
 
@@ -582,15 +596,15 @@ public class TestBasicDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testInvalidConnectionInitSqlList() {
-        ds.setConnectionInitSqls(Arrays.asList("SELECT 1", "invalid"));
+    public void testInvalidConnectionInitSqlCollection() {
+        ds.setConnectionInitSqls((Collection<String>) Arrays.asList("SELECT 1", "invalid"));
         final SQLException e = assertThrows(SQLException.class, ds::getConnection);
         assertTrue(e.toString().contains("invalid"));
     }
 
     @Test
-    public void testInvalidConnectionInitSqlCollection() {
-        ds.setConnectionInitSqls((Collection<String>) Arrays.asList("SELECT 1", "invalid"));
+    public void testInvalidConnectionInitSqlList() {
+        ds.setConnectionInitSqls(Arrays.asList("SELECT 1", "invalid"));
         final SQLException e = assertThrows(SQLException.class, ds::getConnection);
         assertTrue(e.toString().contains("invalid"));
     }
@@ -658,23 +672,14 @@ public class TestBasicDataSource extends TestConnectionPool {
     @Test
     public void testJmxDoesNotExposePassword() throws Exception {
         final MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-
         try (Connection c = ds.getConnection()) {
             // nothing
         }
         final ObjectName objectName = new ObjectName(ds.getJmxName());
-
         final MBeanAttributeInfo[] attributes = mbs.getMBeanInfo(objectName).getAttributes();
-
         assertTrue(attributes != null && attributes.length > 0);
-
-        Arrays.asList(attributes).forEach(attrInfo -> {
-            assertFalse("password".equalsIgnoreCase(attrInfo.getName()));
-        });
-
-        assertThrows(AttributeNotFoundException.class, () -> {
-            mbs.getAttribute(objectName, "Password");
-        });
+        Arrays.asList(attributes).forEach(attrInfo -> assertFalse("password".equalsIgnoreCase(attrInfo.getName())));
+        assertThrows(AttributeNotFoundException.class, () -> mbs.getAttribute(objectName, "Password"));
     }
 
     @Test
@@ -782,6 +787,33 @@ public class TestBasicDataSource extends TestConnectionPool {
             dconn = ((DelegatingConnection<?>) conn).getInnermostDelegate();
             assertNull(dconn);
         }
+    }
+
+    @Test
+    public void testNoOverlapBetweenDisconnectionAndIgnoreSqlCodes() {
+        // Set disconnection SQL codes without overlap
+        final HashSet<String> disconnectionSqlCodes = new HashSet<>(Arrays.asList("XXX", "ZZZ"));
+        ds.setDisconnectionSqlCodes(disconnectionSqlCodes);
+
+        // Set ignore SQL codes without overlap
+        final HashSet<String> disconnectionIgnoreSqlCodes = new HashSet<>(Arrays.asList("YYY", "AAA"));
+        ds.setDisconnectionIgnoreSqlCodes(disconnectionIgnoreSqlCodes);
+
+        assertEquals(disconnectionSqlCodes, ds.getDisconnectionSqlCodes(), "Disconnection SQL codes should match the set values.");
+        assertEquals(disconnectionIgnoreSqlCodes, ds.getDisconnectionIgnoreSqlCodes(), "Disconnection Ignore SQL codes should match the set values.");
+    }
+
+    @Test
+    public void testOverlapBetweenDisconnectionAndIgnoreSqlCodes() {
+        // Set initial disconnection SQL codes
+        final HashSet<String> disconnectionSqlCodes = new HashSet<>(Arrays.asList("XXX", "ZZZ"));
+        ds.setDisconnectionSqlCodes(disconnectionSqlCodes);
+        // Try setting ignore SQL codes with overlap
+        final HashSet<String> disconnectionIgnoreSqlCodes = new HashSet<>(Arrays.asList("YYY", "XXX"));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> ds.setDisconnectionIgnoreSqlCodes(disconnectionIgnoreSqlCodes));
+        assertEquals("[XXX] cannot be in both disconnectionSqlCodes and disconnectionIgnoreSqlCodes.", exception.getMessage());
     }
 
     /**

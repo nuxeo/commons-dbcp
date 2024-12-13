@@ -19,11 +19,13 @@ package org.apache.commons.dbcp2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.management.OperationsException;
 
@@ -42,9 +44,7 @@ public class TestPoolableConnection {
     @BeforeEach
     public void setUp() throws Exception {
         final PoolableConnectionFactory factory = new PoolableConnectionFactory(
-                new DriverConnectionFactory(
-                        new TesterDriver(),"jdbc:apache:commons:testdriver", null),
-                null);
+                new DriverConnectionFactory(new TesterDriver(), "jdbc:apache:commons:testdriver", null), null);
         factory.setDefaultAutoCommit(Boolean.TRUE);
         factory.setDefaultReadOnly(Boolean.TRUE);
 
@@ -88,6 +88,27 @@ public class TestPoolableConnection {
         c.close(); // Can't be null
 
         assertEquals(0, pool.getNumActive(), "There should now be zero active objects in the pool");
+    }
+
+    @Test
+    public void testDisconnectionIgnoreSqlCodes() throws Exception {
+        pool.setTestOnReturn(true);
+        final PoolableConnectionFactory factory = (PoolableConnectionFactory) pool.getFactory();
+        factory.setFastFailValidation(true);
+        factory.setDisconnectionIgnoreSqlCodes(Arrays.asList("08S02", "08007"));
+
+        final PoolableConnection conn = pool.borrowObject();
+        final TesterConnection nativeConnection = (TesterConnection) conn.getInnermostDelegate();
+
+        // set up non-fatal exception
+        nativeConnection.setFailure(new SQLException("Non-fatal connection error.", "08S02"));
+        assertThrows(SQLException.class, conn::createStatement);
+        nativeConnection.setFailure(null);
+
+        // verify that non-fatal connection is returned to the pool
+        conn.close();
+        assertEquals(0, pool.getNumActive(), "The pool should have no active connections");
+        assertEquals(1, pool.getNumIdle(), "The pool should have one idle connection");
     }
 
     @Test
@@ -149,14 +170,9 @@ public class TestPoolableConnection {
 
         // Set up fatal exception
         nativeConnection.setFailure(new SQLException("Fatal connection error.", "XXX"));
-
-        try {
-            conn.createStatement();
-            fail("Should throw SQL exception.");
-        } catch (final SQLException ignored) {
-            // cleanup failure
-            nativeConnection.setFailure(null);
-        }
+        assertThrows(SQLException.class, conn::createStatement);
+        // cleanup failure
+        nativeConnection.setFailure(null);
 
         // verify that bad connection does not get returned to the pool
         conn.close();  // testOnReturn triggers validate, which should fail
