@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Test if the pooling if no idle objects are used
  */
-public class TestParallelCreationWithNoIdle  {
+public class TestParallelCreationWithNoIdle {
 
     final class TestThread extends Thread {
         final Random random = new Random();
@@ -53,8 +53,7 @@ public class TestParallelCreationWithNoIdle  {
             // System.out.println("Thread started " + Thread.currentThread().toString());
             for (int i = 0; i < iter; i++) {
                 sleepMax(delay);
-                try (Connection conn = ds.getConnection();
-                        PreparedStatement stmt = conn.prepareStatement("select 'literal', SYSDATE from dual")) {
+                try (Connection conn = ds.getConnection(); PreparedStatement stmt = conn.prepareStatement("select 'literal', SYSDATE from dual")) {
                     // System.out.println("Got Connection " + Thread.currentThread().toString());
                     final ResultSet rset = stmt.executeQuery();
                     rset.next();
@@ -79,6 +78,7 @@ public class TestParallelCreationWithNoIdle  {
             }
         }
     }
+
     private static final String CATALOG = "test catalog";
 
     protected BasicDataSource ds;
@@ -112,12 +112,12 @@ public class TestParallelCreationWithNoIdle  {
     }
 
     /**
-     * Fire up 100 Threads but only have 10 maxActive and forcedBlock.
-     * See
+     * Fire up 100 Threads but only have 10 maxActive and forcedBlock. See
+     *
      * @throws Exception
      */
     @Test
-    public void testMassiveConcurrentInitBorrow() throws Exception {
+    void testMassiveConcurrentInitBorrow() throws Exception {
         final int numThreads = 200;
         ds.setDriverClassName("org.apache.commons.dbcp2.TesterConnectionDelayDriver");
         ds.setUrl("jdbc:apache:commons:testerConnectionDelayDriver:20");
@@ -133,7 +133,7 @@ public class TestParallelCreationWithNoIdle  {
         for (int i = 0; i < numThreads; i++) {
             threads[i].start();
 
-            if (i%4 == 0) {
+            if (i % 4 == 0) {
                 Thread.sleep(20);
             }
         }

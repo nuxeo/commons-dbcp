@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -58,7 +57,7 @@ public class TestPoolableConnection {
     }
 
     @Test
-    public void testClosingWrappedInDelegate() throws Exception {
+    void testClosingWrappedInDelegate() throws Exception {
         Assertions.assertEquals(0, pool.getNumActive());
 
         final Connection conn = pool.borrowObject();
@@ -77,7 +76,7 @@ public class TestPoolableConnection {
     }
 
     @Test
-    public void testConnectionPool() throws Exception {
+    void testConnectionPool() throws Exception {
         // Grab a new connection from the pool
         final Connection c = pool.borrowObject();
 
@@ -91,7 +90,7 @@ public class TestPoolableConnection {
     }
 
     @Test
-    public void testDisconnectionIgnoreSqlCodes() throws Exception {
+    void testDisconnectionIgnoreSqlCodes() throws Exception {
         pool.setTestOnReturn(true);
         final PoolableConnectionFactory factory = (PoolableConnectionFactory) pool.getFactory();
         factory.setFastFailValidation(true);
@@ -112,7 +111,7 @@ public class TestPoolableConnection {
     }
 
     @Test
-    public void testFastFailValidation() throws Exception {
+    void testFastFailValidation() throws Exception {
         pool.setTestOnReturn(true);
         final PoolableConnectionFactory factory = (PoolableConnectionFactory) pool.getFactory();
         factory.setFastFailValidation(true);
@@ -121,44 +120,30 @@ public class TestPoolableConnection {
 
         // Set up non-fatal exception
         nativeConnection.setFailure(new SQLException("Not fatal error.", "Invalid syntax."));
-        try {
-            conn.createStatement();
-            fail("Should throw SQL exception.");
-        } catch (final SQLException ignored) {
-            // cleanup failure
-            nativeConnection.setFailure(null);
-        }
+        assertThrows(SQLException.class, conn::createStatement);
+        // cleanup failure
+        nativeConnection.setFailure(null);
 
         // validate should not fail - error was not fatal and condition was cleaned up
         conn.validate("SELECT 1", 1000);
 
         // now set up fatal failure
         nativeConnection.setFailure(new SQLException("Fatal connection error.", "01002"));
-
-        try {
-            conn.createStatement();
-            fail("Should throw SQL exception.");
-        } catch (final SQLException ignored) {
-            // cleanup failure
-            nativeConnection.setFailure(null);
-        }
+        assertThrows(SQLException.class, conn::createStatement);
+        // cleanup failure
+        nativeConnection.setFailure(null);
 
         // validate should now fail because of previous fatal error, despite cleanup
-        try {
-            conn.validate("SELECT 1", 1000);
-            fail("Should throw SQL exception on validation.");
-        } catch (final SQLException notValid){
-            // expected - fatal error && fastFailValidation
-        }
+        assertThrows(SQLException.class, () -> conn.validate("SELECT 1", 1000), "Should throw SQL exception on validation.");
 
         // verify that bad connection does not get returned to the pool
-        conn.close();  // testOnReturn triggers validate, which should fail
+        conn.close(); // testOnReturn triggers validate, which should fail
         assertEquals(0, pool.getNumActive(), "The pool should have no active connections");
         assertEquals(0, pool.getNumIdle(), "The pool should have no idle connections");
     }
 
     @Test
-    public void testFastFailValidationCustomCodes() throws Exception {
+    void testFastFailValidationCustomCodes() throws Exception {
         pool.setTestOnReturn(true);
         final PoolableConnectionFactory factory = (PoolableConnectionFactory) pool.getFactory();
         factory.setFastFailValidation(true);
@@ -175,13 +160,13 @@ public class TestPoolableConnection {
         nativeConnection.setFailure(null);
 
         // verify that bad connection does not get returned to the pool
-        conn.close();  // testOnReturn triggers validate, which should fail
+        conn.close(); // testOnReturn triggers validate, which should fail
         assertEquals(0, pool.getNumActive(), "The pool should have no active connections");
         assertEquals(0, pool.getNumIdle(), "The pool should have no idle connections");
     }
 
     @Test
-    public void testIsDisconnectionSqlExceptionStackOverflow() throws Exception {
+    void testIsDisconnectionSqlExceptionStackOverflow() throws Exception {
         final int maxDeep = 100_000;
         final SQLException rootException = new SQLException("Data truncated", "22001");
         SQLException parentException = rootException;
@@ -196,24 +181,23 @@ public class TestPoolableConnection {
     }
 
     /**
-     * Tests if the {@link PoolableConnectionMXBean} interface is a valid MXBean
-     * interface.
+     * Tests if the {@link PoolableConnectionMXBean} interface is a valid MXBean interface.
      */
     @Test
-    public void testMXBeanCompliance() throws OperationsException {
-       TestBasicDataSourceMXBean.testMXBeanCompliance(PoolableConnectionMXBean.class);
+    void testMXBeanCompliance() throws OperationsException {
+        TestBasicDataSourceMXBean.testMXBeanCompliance(PoolableConnectionMXBean.class);
     }
 
     // Bugzilla Bug 33591: PoolableConnection leaks connections if the
     // delegated connection closes itself.
     @Test
-    public void testPoolableConnectionLeak() throws Exception {
+    void testPoolableConnectionLeak() throws Exception {
         // 'Borrow' a connection from the pool
         final Connection conn = pool.borrowObject();
 
         // Now close our innermost delegate, simulating the case where the
         // underlying connection closes itself
-        ((PoolableConnection)conn).getInnermostDelegate().close();
+        ((PoolableConnection) conn).getInnermostDelegate().close();
 
         // At this point, we can close the pooled connection. The
         // PoolableConnection *should* realize that its underlying

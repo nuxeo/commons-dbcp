@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@
 
 package org.apache.commons.dbcp2;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Hashtable;
 
@@ -72,7 +72,7 @@ public class TestJndi {
     }
 
     /**
-     * Retrieves (or creates if it does not exist) an InitialContext.
+     * Gets (or creates if it does not exist) an InitialContext.
      *
      * @return the InitialContext.
      * @throws NamingException if the InitialContext cannot be retrieved
@@ -93,10 +93,7 @@ public class TestJndi {
     protected DataSource retrieveDataSource() throws Exception {
         final Context ctx = getInitialContext();
         final DataSource dataSource = (DataSource) ctx.lookup(JNDI_PATH);
-
-        if (dataSource == null) {
-            fail("DataSource should not be null");
-        }
+        assertNotNull(dataSource, "DataSource should not be null");
         return dataSource;
     }
 
@@ -118,7 +115,7 @@ public class TestJndi {
      * @throws Exception
      */
     @Test
-    public void testBasicDataSourceBind() throws Exception {
+    void testBasicDataSourceBind() throws Exception {
         final BasicDataSource dataSource = new BasicDataSource();
         checkBind(dataSource);
     }
@@ -129,7 +126,7 @@ public class TestJndi {
      * @throws Exception
      */
     @Test
-    public void testPerUserPoolDataSourceBind() throws Exception {
+    void testPerUserPoolDataSourceBind() throws Exception {
         final PerUserPoolDataSource dataSource = new PerUserPoolDataSource();
         checkBind(dataSource);
     }
@@ -140,7 +137,7 @@ public class TestJndi {
      * @throws Exception
      */
     @Test
-    public void testSharedPoolDataSourceBind() throws Exception {
+    void testSharedPoolDataSourceBind() throws Exception {
         final SharedPoolDataSource dataSource = new SharedPoolDataSource();
         checkBind(dataSource);
     }

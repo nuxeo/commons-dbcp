@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 public class TestListException {
 
     @Test
-    public void testExceptionList() {
+    void testExceptionList() {
         final List<Throwable> exceptions = Arrays.asList(new NullPointerException(), new RuntimeException());
         final ListException list = new ListException("Internal Error", exceptions);
         assertEquals("Internal Error", list.getMessage());
@@ -40,7 +40,7 @@ public class TestListException {
     }
 
     @Test
-    public void testNulls() {
+    void testNulls() {
         final ListException list = new ListException(null, null);
         assertNull(list.getMessage());
         assertNull(list.getExceptionList());

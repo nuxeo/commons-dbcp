@@ -7,7 +7,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,7 @@ package org.apache.commons.dbcp2.managed;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -94,7 +93,7 @@ public class TestPoolableManagedConnection {
     }
 
     @Test
-    public void testManagedConnection() throws Exception {
+    void testManagedConnection() throws Exception {
         assertEquals(0, pool.getNumActive());
         // create a connection
         conn = pool.borrowObject();
@@ -110,7 +109,7 @@ public class TestPoolableManagedConnection {
     }
 
     @Test
-    public void testPoolableConnection() throws Exception {
+    void testPoolableConnection() throws Exception {
         // create a connection
         // pool uses LocalXAConnectionFactory, which register the connection with the TransactionRegistry
         conn = pool.borrowObject();
@@ -122,10 +121,11 @@ public class TestPoolableManagedConnection {
     }
 
     @Test
-    public void testReallyClose() throws Exception {
+    void testReallyClose() throws Exception {
         assertEquals(0, pool.getNumActive());
         // create a connection
-        // pool uses LocalXAConnectionFactory, which register the connection with the TransactionRegistry
+        // pool uses LocalXAConnectionFactory, which register the connection with the
+        // TransactionRegistry
         conn = pool.borrowObject();
         assertEquals(1, pool.getNumActive());
         assertNotNull(transactionRegistry.getXAResource(conn));
@@ -134,14 +134,10 @@ public class TestPoolableManagedConnection {
         poolableManagedConnection.close();
         assertNotNull(transactionRegistry.getXAResource(conn));
         assertEquals(1, pool.getNumActive());
-        // this must close the managed connection, removing it from the transaction registry
+        // this must close the managed connection, removing it from the transaction
+        // registry
         poolableManagedConnection.reallyClose();
-        try {
-            assertNull(transactionRegistry.getXAResource(conn));
-            fail("Transaction registry was supposed to be empty now");
-        } catch (final SQLException ignore) {
-            // ignore
-        }
+        assertThrows(SQLException.class, () -> transactionRegistry.getXAResource(conn), "Transaction registry was supposed to be empty now");
         assertEquals(0, pool.getNumActive());
     }
 }

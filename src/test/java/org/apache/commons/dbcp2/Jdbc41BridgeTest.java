@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,7 +37,7 @@ import org.mockito.Mockito;
 /**
  * Tests {@link Jdbc41Bridge}.
  */
-public class Jdbc41BridgeTest {
+class Jdbc41BridgeTest {
 
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection("jdbc:h2:mem:test");
@@ -45,7 +45,7 @@ public class Jdbc41BridgeTest {
 
     @SuppressWarnings("resource")
     @Test
-    public void testAbort() throws SQLException {
+    void testAbort() throws SQLException {
         // Normal
         try (Connection conn = getConnection()) {
             Jdbc41Bridge.abort(conn, r -> {
@@ -66,7 +66,7 @@ public class Jdbc41BridgeTest {
 
     @SuppressWarnings("resource")
     @Test
-    public void testCloseOnCompletion() throws SQLException {
+    void testCloseOnCompletion() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 Statement stmt = conn.createStatement()) {
@@ -83,7 +83,7 @@ public class Jdbc41BridgeTest {
 
     @SuppressWarnings("resource")
     @Test
-    public void testGeneratedKeyAlwaysReturned() throws SQLException {
+    void testGeneratedKeyAlwaysReturned() throws SQLException {
         // Normal
         try (Connection conn = getConnection()) {
             assertTrue(Jdbc41Bridge.generatedKeyAlwaysReturned(conn.getMetaData()));
@@ -98,7 +98,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testGetNetworkTimeout() throws SQLException {
+    void testGetNetworkTimeout() throws SQLException {
         // Normal
         try (Connection conn = getConnection()) {
             Jdbc41Bridge.setNetworkTimeout(conn, r -> {
@@ -109,7 +109,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testGetObjectIndex() throws SQLException {
+    void testGetObjectIndex() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 ResultSet rs = conn.getMetaData().getTypeInfo()) {
@@ -129,7 +129,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testGetObjectName() throws SQLException {
+    void testGetObjectName() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 ResultSet rs = conn.getMetaData().getTypeInfo()) {
@@ -149,7 +149,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testGetParentLogger() throws SQLException {
+    void testGetParentLogger() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 Statement stmt = conn.createStatement()) {
@@ -160,7 +160,7 @@ public class Jdbc41BridgeTest {
 
     @SuppressWarnings("resource")
     @Test
-    public void testGetSchema() throws SQLException {
+    void testGetSchema() throws SQLException {
         // Normal
         try (Connection conn = getConnection()) {
             assertNotNull(Jdbc41Bridge.getSchema(conn));
@@ -171,7 +171,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testIsCloseOnCompletion() throws SQLException {
+    void testIsCloseOnCompletion() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 Statement stmt = conn.createStatement()) {
@@ -180,7 +180,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testSetNetworkTimeout() throws SQLException {
+    void testSetNetworkTimeout() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 Statement stmt = conn.createStatement()) {
@@ -193,7 +193,7 @@ public class Jdbc41BridgeTest {
     }
 
     @Test
-    public void testSetSchema() throws SQLException {
+    void testSetSchema() throws SQLException {
         // Normal
         try (Connection conn = getConnection();
                 Statement stmt = conn.createStatement()) {

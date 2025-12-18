@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ package org.apache.commons.dbcp2;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 
@@ -76,6 +77,13 @@ public class TesterStatement extends AbandonedTrace implements Statement {
     protected void checkOpen() throws SQLException {
         if (!open) {
             throw new SQLException("Connection is closed.");
+        }
+    }
+
+    protected void checkQueryTimeout() throws SQLTimeoutException {
+        if (queryTimeout > 0 && queryTimeout < 5) {
+            // Simulate timeout if queryTimout is set to less than 5 seconds
+            throw new SQLTimeoutException("query timeout " + queryTimeout);
         }
     }
 
@@ -190,10 +198,7 @@ public class TesterStatement extends AbandonedTrace implements Statement {
         default:
             break;
         }
-        // Simulate timeout if queryTimout is set to less than 5 seconds
-        if (queryTimeout > 0 && queryTimeout < 5) {
-            throw new SQLException("query timeout");
-        }
+        checkQueryTimeout();
         return new TesterResultSet(this);
     }
 
@@ -398,8 +403,8 @@ public class TesterStatement extends AbandonedTrace implements Statement {
         this.queryTimeout = seconds;
     }
 
-    public void setSqlExceptionOnClose(final boolean _sqlExceptionOnClose) {
-        this.sqlExceptionOnClose = _sqlExceptionOnClose;
+    public void setSqlExceptionOnClose(final boolean sqlExceptionOnClose) {
+        this.sqlExceptionOnClose = sqlExceptionOnClose;
     }
 
     @Override

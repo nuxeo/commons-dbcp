@@ -7,7 +7,7 @@
   (the "License"); you may not use this file except in compliance with
   the License.  You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+      https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,9 @@
  */
 package org.apache.commons.dbcp2.managed;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -66,8 +68,8 @@ public class TestConnectionWithNarayana {
 
     @BeforeEach
     public void setUp() throws Exception {
-        jtaPropertyManager.getJTAEnvironmentBean().setLastResourceOptimisationInterfaceClassName(
-                "org.apache.commons.dbcp2.managed.LocalXAConnectionFactory$LocalXAResource");
+        jtaPropertyManager.getJTAEnvironmentBean()
+                .setLastResourceOptimisationInterfaceClassName("org.apache.commons.dbcp2.managed.LocalXAConnectionFactory$LocalXAResource");
         mds = new BasicManagedDataSource();
         mds.setTransactionManager(new TransactionManagerImple());
         mds.setDriverClassName("org.h2.Driver");
@@ -105,7 +107,7 @@ public class TestConnectionWithNarayana {
     }
 
     @Test
-    public void testConnectionCommitAfterTimeout() throws Exception {
+    void testConnectionCommitAfterTimeout() throws Exception {
         mds.getTransactionManager().setTransactionTimeout(1);
         mds.getTransactionManager().begin();
         try (Connection conn = mds.getConnection()) {
@@ -114,21 +116,15 @@ public class TestConnectionWithNarayana {
             } while (mds.getTransactionManager().getTransaction().getStatus() != Status.STATUS_ROLLEDBACK);
             // Let the reaper do it's thing
             Thread.sleep(1000);
-            try {
-                conn.commit();
-                fail("Should not work after timeout");
-            } catch (final SQLException e) {
-                // Expected
-                Assertions.assertEquals("Commit cannot be set while enrolled in a transaction", e.getMessage());
-            }
+            final SQLException e = assertThrows(SQLException.class, conn::commit);
+            assertEquals("Commit cannot be set while enrolled in a transaction", e.getMessage(), "Should not work after timeout");
             mds.getTransactionManager().rollback();
         }
-
-        Assertions.assertEquals(0, mds.getNumActive());
+        assertEquals(0, mds.getNumActive());
     }
 
     @Test
-    public void testConnectionInTimeout() throws Exception {
+    void testConnectionInTimeout() throws Exception {
         Connection conn = null;
         PreparedStatement ps = null;
         for (int i = 0; i < 5; i++) {
@@ -160,19 +156,17 @@ public class TestConnectionWithNarayana {
                 conn.close();
                 conn = null;
 
-                try {
-                    mds.getTransactionManager().commit();
-                    fail("Should not have been able to commit");
-                } catch (final RollbackException e) {
-                    // this is expected
-                    if (mds.getTransactionManager().getTransaction() != null) {
-                        // Need to pop it off the thread if a background thread rolled the transaction back
-                        mds.getTransactionManager().rollback();
-                    }
+                assertThrows(RollbackException.class, () -> mds.getTransactionManager().commit());
+                // this is expected
+                if (mds.getTransactionManager().getTransaction() != null) {
+                    // Need to pop it off the thread if a background thread rolled the transaction
+                    // back
+                    mds.getTransactionManager().rollback();
                 }
             } catch (final Exception e) {
                 if (mds.getTransactionManager().getTransaction() != null) {
-                    // Need to pop it off the thread if a background thread rolled the transaction back
+                    // Need to pop it off the thread if a background thread rolled the transaction
+                    // back
                     mds.getTransactionManager().rollback();
                 }
             } finally {
@@ -188,30 +182,19 @@ public class TestConnectionWithNarayana {
     }
 
     @Test
-    public void testRepeatedGetConnectionInTimeout() throws Exception {
+    void testRepeatedGetConnectionInTimeout() throws Exception {
         mds.getTransactionManager().setTransactionTimeout(1);
         mds.getTransactionManager().begin();
-
         try {
             do {
                 Thread.sleep(1000);
             } while (mds.getTransactionManager().getTransaction().getStatus() != Status.STATUS_ROLLEDBACK);
             // Let the reaper do it's thing
             Thread.sleep(1000);
-            try (Connection conn = mds.getConnection()) {
-                fail("Should not get the connection 1");
-            } catch (final SQLException e) {
-                if (!e.getCause().getClass().equals(IllegalStateException.class)) {
-                    throw e;
-                }
-                try (Connection conn = mds.getConnection()) {
-                    fail("Should not get connection 2");
-                } catch (final SQLException e2) {
-                    if (!e2.getCause().getClass().equals(IllegalStateException.class)) {
-                        throw e2;
-                    }
-                }
-            }
+            final SQLException e = assertThrows(SQLException.class, mds::getConnection);
+            assertTrue(e.getCause().getClass().equals(IllegalStateException.class));
+            final SQLException e2 = assertThrows(SQLException.class, mds::getConnection);
+            assertTrue(e2.getCause().getClass().equals(IllegalStateException.class));
         } finally {
             mds.getTransactionManager().rollback();
         }

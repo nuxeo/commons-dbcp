@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -73,7 +73,7 @@ public class TestFactory {
         "defaultTransactionIsolation,    X",
         "defaultReadOnly,                true" })
     // @formatter:on
-    public void testJNDI2Pools(final String string, final String value) throws Exception {
+    void testJNDI2Pools(final String string, final String value) throws Exception {
         final Reference refObj = new Reference(SharedPoolDataSource.class.getName());
         refObj.add(new StringRefAddr(string, value));
         final Context context = new InitialContext();

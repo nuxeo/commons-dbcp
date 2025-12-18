@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,7 +38,7 @@ public class TestPoolKey {
     }
 
     @Test
-    public void testEquals() {
+    void testEquals() {
         assertEquals(poolKey, poolKey);
         assertNotEquals(poolKey, null);
         assertNotEquals(poolKey, new Object());
@@ -51,13 +51,13 @@ public class TestPoolKey {
     }
 
     @Test
-    public void testHashcode() {
+    void testHashcode() {
         assertEquals(poolKey.hashCode(), new PoolKey("ds", "user").hashCode());
         assertNotEquals(poolKey.hashCode(), anotherPoolKey.hashCode());
     }
 
     @Test
-    public void testToString() {
+    void testToString() {
         assertEquals(poolKey.toString(), new PoolKey("ds", "user").toString());
         assertNotEquals(poolKey.toString(), anotherPoolKey.toString());
     }

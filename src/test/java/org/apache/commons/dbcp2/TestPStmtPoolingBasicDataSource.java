@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -54,7 +54,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
      * for new ones if necessary.
      */
     @Test
-    public void testLRUBehavior() throws Exception {
+    void testLRUBehavior() throws Exception {
         ds.setMaxOpenPreparedStatements(3);
 
         final Connection conn = getConnection();
@@ -78,12 +78,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
         assertNotNull(stmt4);
 
         // Verify that inner1 has been closed
-        try {
-            inner1.clearParameters();
-            fail("expecting SQLExcption - statement should be closed");
-        } catch (final SQLException ex) {
-            //Expected
-        }
+        assertThrows(SQLException.class, inner1::clearParameters, "expecting SQLExcption - statement should be closed");
         // But others are still open
         inner2.clearParameters();
         inner3.clearParameters();
@@ -94,12 +89,8 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
         assertNotSame(inner5, inner1);
 
         // inner2 should be closed now
-        try {
-            inner2.clearParameters();
-            fail("expecting SQLExcption - statement should be closed");
-        } catch (final SQLException ex) {
-            //Expected
-        }
+        assertThrows(SQLException.class, inner2::clearParameters, "expecting SQLExcption - statement should be closed");
+
         // But inner3 should still be open
         inner3.clearParameters();
     }
@@ -109,7 +100,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
      * DBCP-414
      */
     @Test
-    public void testMultipleThreads1() throws Exception {
+    void testMultipleThreads1() throws Exception {
         ds.setMaxWait(Duration.ofMillis(-1));
         ds.setMaxTotal(5);
         ds.setMaxOpenPreparedStatements(-1);
@@ -117,7 +108,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
     }
 
     @Test
-    public void testPreparedStatementPooling() throws Exception {
+    void testPreparedStatementPooling() throws Exception {
         final Connection conn = getConnection();
         assertNotNull(conn);
 
@@ -130,10 +121,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
         assertNotSame(stmt1, stmt2);
 
         // go over the maxOpen limit
-        try (PreparedStatement ps = conn.prepareStatement("select 'c' from dual")) {
-            fail("expected SQLException");
-        }
-        catch (final SQLException e) {}
+        assertThrows(SQLException.class, () -> conn.prepareStatement("select 'c' from dual"));
 
         // make idle
         stmt2.close();
@@ -154,7 +142,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
     // Bugzilla Bug 27246
     // PreparedStatement cache should be different depending on the Catalog
     @Test
-    public void testPStmtCatalog() throws Exception {
+    void testPStmtCatalog() throws Exception {
         final Connection conn = getConnection();
         conn.setCatalog("catalog1");
         final DelegatingPreparedStatement stmt1 = (DelegatingPreparedStatement) conn.prepareStatement("select 'a' from dual");
@@ -179,7 +167,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
     }
 
     @Test
-    public void testPStmtPoolingAcrossClose() throws Exception {
+    void testPStmtPoolingAcrossClose() throws Exception {
         ds.setMaxTotal(1); // only one connection in pool needed
         ds.setMaxIdle(1);
         ds.setAccessToUnderlyingConnectionAllowed(true);
@@ -221,7 +209,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
      * @throws Exception
      */
     @Test
-    public void testPStmtPoolingAcrossCloseWithClearOnReturn() throws Exception {
+    void testPStmtPoolingAcrossCloseWithClearOnReturn() throws Exception {
         ds.setMaxTotal(1); // only one connection in pool needed
         ds.setMaxIdle(1);
         ds.setClearStatementPoolOnReturn(true);
@@ -275,7 +263,7 @@ public class TestPStmtPoolingBasicDataSource extends TestBasicDataSource {
     }
 
     @Test
-    public void testPStmtPoolingWithNoClose() throws Exception {
+    void testPStmtPoolingWithNoClose() throws Exception {
         ds.setMaxTotal(1); // only one connection in pool needed
         ds.setMaxIdle(1);
         ds.setAccessToUnderlyingConnectionAllowed(true);

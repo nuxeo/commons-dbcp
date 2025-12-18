@@ -7,7 +7,7 @@
   (the "License"); you may not use this file except in compliance with
   the License.  You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+      https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,7 +45,7 @@ public class TestDataSourceXAConnectionFactory extends TestBasicDataSource {
      * Delegates everything to the BasicDataSource (ds field), except for
      * getXAConnection which creates a BasicXAConnection.
      */
-    public class XADataSourceHandle implements InvocationHandler {
+    public final class XADataSourceHandle implements InvocationHandler {
 
         protected XAConnection getXAConnection() throws SQLException {
             return new TesterBasicXAConnection(ds.getConnection(), closeCounter);
@@ -96,7 +96,7 @@ public class TestDataSourceXAConnectionFactory extends TestBasicDataSource {
      * JIRA: DBCP-355
      */
     @Test
-    public void testPhysicalClose() throws Exception {
+    void testPhysicalClose() throws Exception {
         bmds.setMaxIdle(1);
         final Connection conn1 = bmds.getConnection();
         final Connection conn2 = bmds.getConnection();

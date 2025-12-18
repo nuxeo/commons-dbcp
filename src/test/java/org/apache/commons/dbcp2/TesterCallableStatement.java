@@ -7,7 +7,7 @@
   (the "License"); you may not use this file except in compliance with
   the License.  You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+      https://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -265,7 +265,7 @@ public class TesterCallableStatement extends TesterPreparedStatement implements 
     }
 
     @Override
-    public Object getObject(final String parameterName, final Map<String,Class<?>> map) throws SQLException {
+    public Object getObject(final String parameterName, final Map<String, Class<?>> map) throws SQLException {
         return null;
     }
 
@@ -573,8 +573,7 @@ public class TesterCallableStatement extends TesterPreparedStatement implements 
     }
 
     @Override
-    public void setObject(final String parameterName, final Object x, final SQLType targetSqlType, final int scaleOrLength)
-            throws SQLException {
+    public void setObject(final String parameterName, final Object x, final SQLType targetSqlType, final int scaleOrLength) throws SQLException {
         // Do nothing
     }
 

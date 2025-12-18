@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -32,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 import javax.sql.DataSource;
 
@@ -51,7 +51,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
      * There are 3 different prepareCall statement methods so add a little complexity to reduce what would otherwise be lots
      * of copy and paste.
      */
-    private static abstract class AbstractPrepareCallCallback {
+    private abstract static class AbstractPrepareCallCallback {
         protected Connection conn;
 
         abstract CallableStatement getCallableStatement() throws SQLException;
@@ -65,7 +65,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
      * There are 6 different prepareStatement statement methods so add a little complexity to reduce what would otherwise be
      * lots of copy and paste.
      */
-    private static abstract class AbstractPrepareStatementCallback {
+    private abstract static class AbstractPrepareStatementCallback {
         protected Connection conn;
 
         abstract PreparedStatement prepareStatement() throws SQLException;
@@ -296,7 +296,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
 
     @Override
     protected Connection getConnection() throws Exception {
-        return ds.getConnection("foo","bar");
+        return ds.getConnection("foo", "bar");
     }
 
     @SuppressWarnings("resource")
@@ -326,7 +326,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
 
     // See DBCP-8
     @Test
-    public void testChangePassword() throws Exception {
+    void testChangePassword() throws Exception {
         assertThrows(SQLException.class, () -> ds.getConnection("foo", "bay"));
         final Connection con1 = ds.getConnection("foo", "bar");
         final Connection con2 = ds.getConnection("foo", "bar");
@@ -357,7 +357,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
      * @throws Exception
      */
     @Test
-    public void testClosePool() throws Exception {
+    void testClosePool() throws Exception {
         ((SharedPoolDataSource) ds).close();
         @SuppressWarnings("resource") // closed below
         final SharedPoolDataSource tds = new SharedPoolDataSource();
@@ -387,7 +387,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testClosingWithUserName() throws Exception {
+    void testClosingWithUserName() throws Exception {
         final Connection[] c = new Connection[getMaxTotal()];
         // open the maximum connections
         for (int i = 0; i < c.length; i++) {
@@ -414,7 +414,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testDbcp369() {
+    void testDbcp369() {
         final ArrayList<SharedPoolDataSource> dataSources = new ArrayList<>();
         for (int j = 0; j < 10000; j++) {
             dataSources.add(new SharedPoolDataSource());
@@ -448,63 +448,62 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     /**
-     * Starting with a successful connection, then incorrect password,
-     * then correct password for same user illustrates
-     * JIRA: DBCP-245
+     * Tests https://issues.apache.org/jira/browse/DBCP-597
      */
     @Test
-    public void testIncorrectPassword() throws SQLException {
-        ds.getConnection("u2", "p2").close();
-        try (Connection c = ds.getConnection("u1", "zlsafjk")){ // Use bad password
-            fail("Able to retrieve connection with incorrect password");
-        } catch (final SQLException e1) {
-            // should fail
+    void testDbcp597() throws SQLException {
+        try (final SharedPoolDataSource sharedPoolDataSource = new SharedPoolDataSource()) {
+            sharedPoolDataSource.setConnectionPoolDataSource(pcds);
+            sharedPoolDataSource.setDefaultTestOnBorrow(true);
+            sharedPoolDataSource.setValidationQuery("SELECT 1");
+            // The tester statement throws a SQLTimeoutException when the timeout is > 0 and < 5.
+            sharedPoolDataSource.setValidationQueryTimeout(Duration.ofSeconds(1));
+            // The SQLTimeoutException is lost for now
+            SQLException e = assertThrows(SQLException.class, sharedPoolDataSource::getConnection);
+            assertEquals(NoSuchElementException.class, e.getCause().getClass());
+            // timeout > 0 and < 1
+            sharedPoolDataSource.setValidationQueryTimeout(Duration.ofMillis(999));
+            // The SQLTimeoutException is lost for now
+            e = assertThrows(SQLException.class, sharedPoolDataSource::getConnection);
+            assertEquals(NoSuchElementException.class, e.getCause().getClass());
         }
+    }
 
+    /**
+     * Starting with a successful connection, then incorrect password, then correct password for same user illustrates JIRA: DBCP-245
+     */
+    @Test
+    void testIncorrectPassword() throws SQLException {
+        ds.getConnection("u2", "p2").close();
+        assertThrows(SQLException.class, () -> ds.getConnection("u1", "zlsafjk"), "Able to retrieve connection with incorrect password");
         // Use good password
         ds.getConnection("u1", "p1").close();
-        try (Connection c = ds.getConnection("u1", "x")) {
-            fail("Able to retrieve connection with incorrect password");
-        } catch (final SQLException e) {
-            if (!e.getMessage().startsWith("Given password did not match")) {
-                throw e;
-            }
-            // else the exception was expected
-        }
-
+        final SQLException e = assertThrows(SQLException.class, () -> ds.getConnection("u1", "x"), "Able to retrieve connection with incorrect password");
+        assertTrue(e.getMessage().startsWith("Given password did not match"));
         // Make sure we can still use our good password.
         ds.getConnection("u1", "p1").close();
-
         // Try related users and passwords
         ds.getConnection("foo", "bar").close();
-        try (Connection c = ds.getConnection("u1", "ar")) {
-            fail("Should have caused an SQLException");
-        } catch (final SQLException expected) {
-        }
-        try (Connection c = ds.getConnection("u1", "baz")) {
-            fail("Should have generated SQLException");
-        } catch (final SQLException expected) {
-        }
+        assertThrows(SQLException.class, () -> ds.getConnection("u1", "ar"));
+        assertThrows(SQLException.class, () -> ds.getConnection("u1", "baz"));
     }
 
     @Override
     @Test
     public void testMaxTotal() throws Exception {
         final Connection[] c = new Connection[getMaxTotal()];
-        for (int i=0; i<c.length; i++) {
+        for (int i = 0; i < c.length; i++) {
             c[i] = ds.getConnection();
             assertNotNull(c[i]);
         }
-
         assertThrows(SQLException.class, ds::getConnection, "Allowed to open more than DefaultMaxTotal connections.");
-
         for (final Connection element : c) {
             element.close();
         }
     }
 
     @Test
-    public void testMaxWaitMillis() throws Exception {
+    void testMaxWaitMillis() throws Exception {
         final int maxWaitMillis = 1000;
         final int theadCount = 20;
 
@@ -525,7 +524,8 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
 
         // Should take ~maxWaitMillis for threads to stop
         for (int i = 0; i < pts.length; i++) {
-            (pts[i] = new PoolTest(threadGroup, Duration.ofMillis(1), true)).start();
+            pts[i] = new PoolTest(threadGroup, Duration.ofMillis(1), true);
+            pts[i].start();
         }
 
         // Wait for all the threads to complete
@@ -547,7 +547,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testMultipleThreads1() throws Exception {
+    void testMultipleThreads1() throws Exception {
         // Override wait time in order to allow for Thread.sleep(1) sometimes taking a lot longer on
         // some JVMs, e.g. Windows.
         final Duration defaultMaxWaitDuration = Duration.ofMillis(430);
@@ -556,7 +556,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testMultipleThreads2() throws Exception {
+    void testMultipleThreads2() throws Exception {
         final Duration defaultMaxWaitDuration = Duration.ofMillis(500);
         ((SharedPoolDataSource) ds).setDefaultMaxWait(defaultMaxWaitDuration);
         multipleThreads(defaultMaxWaitDuration.multipliedBy(2), true, true, defaultMaxWaitDuration);
@@ -584,7 +584,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
      * Bugzilla Bug 24136 ClassCastException in DriverAdapterCPDS when setPoolPreparedStatements(true)
      */
     @Test
-    public void testPoolPrepareCall() throws SQLException {
+    void testPoolPrepareCall() throws SQLException {
         pcds.setPoolPreparedStatements(true);
         try (final Connection conn = ds.getConnection()) {
             assertNotNull(conn);
@@ -599,14 +599,14 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testPoolPreparedCalls() throws Exception {
+    void testPoolPreparedCalls() throws Exception {
         doTestPoolCallableStatements(new CscbString());
         doTestPoolCallableStatements(new CscbStringIntInt());
         doTestPoolCallableStatements(new CscbStringIntIntInt());
     }
 
     @Test
-    public void testPoolPreparedStatements() throws Exception {
+    void testPoolPreparedStatements() throws Exception {
         doTestPoolPreparedStatements(new PscbString());
         doTestPoolPreparedStatements(new PscbStringIntInt());
         doTestPoolPreparedStatements(new PscbStringInt());
@@ -616,7 +616,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testPoolPrepareStatement() throws SQLException {
+    void testPoolPrepareStatement() throws SQLException {
         pcds.setPoolPreparedStatements(true);
 
         try (final Connection conn = ds.getConnection()) {
@@ -695,7 +695,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testSimpleWithUsername() throws Exception {
+    void testSimpleWithUsername() throws Exception {
         try (final Connection conn = ds.getConnection("u1", "p1")) {
             assertNotNull(conn);
             try (final PreparedStatement stmt = conn.prepareStatement("select * from dual")) {
@@ -709,7 +709,7 @@ public class TestSharedPoolDataSource extends TestConnectionPool {
     }
 
     @Test
-    public void testTransactionIsolationBehavior() throws Exception {
+    void testTransactionIsolationBehavior() throws Exception {
         try (final Connection conn = getConnection()) {
             assertNotNull(conn);
             assertEquals(Connection.TRANSACTION_READ_COMMITTED, conn.getTransactionIsolation());

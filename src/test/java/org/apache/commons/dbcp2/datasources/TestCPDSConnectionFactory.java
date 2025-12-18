@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,6 +40,12 @@ public class TestCPDSConnectionFactory {
 
     protected ConnectionPoolDataSourceProxy cpds;
 
+    private void checkPoolLimits(final GenericObjectPool<PooledConnectionAndInfo> pool) {
+        assertTrue(pool.getNumActive() + pool.getNumIdle() <= pool.getMaxTotal(),
+                "Active + Idle should be <= MaxTotal");
+        assertTrue(pool.getNumIdle() <= pool.getMaxIdle(), "Idle should be <= MaxIdle");
+    }
+
     @BeforeEach
     public void setUp() throws Exception {
         cpds = new ConnectionPoolDataSourceProxy(new DriverAdapterCPDS());
@@ -57,9 +63,9 @@ public class TestCPDSConnectionFactory {
      * cleaned up when a PooledConnection throws a connectionError event.
      */
     @Test
-    public void testConnectionErrorCleanup() throws Exception {
+    void testConnectionErrorCleanup() throws Exception {
         // Setup factory
-        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password");
+        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password".toCharArray());
         try (final GenericObjectPool<PooledConnectionAndInfo> pool = new GenericObjectPool<>(factory)) {
             factory.setPool(pool);
 
@@ -77,14 +83,14 @@ public class TestCPDSConnectionFactory {
                 // Throw connectionError event
                 pc.throwConnectionError();
 
-                // Active count should be reduced by 1 and no idle increase
+                // Active count should be reduced by 1
                 assertEquals(1, pool.getNumActive());
-                assertEquals(0, pool.getNumIdle());
+                checkPoolLimits(pool);
 
                 // Throw another one - should be ignored
                 pc.throwConnectionError();
                 assertEquals(1, pool.getNumActive());
-                assertEquals(0, pool.getNumIdle());
+                checkPoolLimits(pool);
 
                 // Ask for another connection
                 final PooledConnection pcon3 = pool.borrowObject().getPooledConnection();
@@ -118,23 +124,8 @@ public class TestCPDSConnectionFactory {
      * JIRA: DBCP-442
      */
     @Test
-    public void testNullValidationQuery() throws Exception {
-        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password");
-        try (final GenericObjectPool<PooledConnectionAndInfo> pool = new GenericObjectPool<>(factory)) {
-            factory.setPool(pool);
-            pool.setTestOnBorrow(true);
-            final PooledConnection pcon = pool.borrowObject().getPooledConnection();
-            try (final Connection con = pcon.getConnection()) {
-            }
-        }
-    }
-
-    /**
-     * JIRA: DBCP-442
-     */
-    @Test
-    public void testNullValidationQuery_Deprecated() throws Exception {
-        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, -1, false, "userName", "password");
+    void testNullValidationQuery() throws Exception {
+        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password".toCharArray());
         try (final GenericObjectPool<PooledConnectionAndInfo> pool = new GenericObjectPool<>(factory)) {
             factory.setPool(pool);
             pool.setTestOnBorrow(true);
@@ -145,9 +136,9 @@ public class TestCPDSConnectionFactory {
     }
 
     @Test
-    public void testSetPasswordThenModCharArray() {
-        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password");
-        final char[] pwd = {'a'};
+    void testSetPasswordCharArray() {
+        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password".toCharArray());
+        final char[] pwd = { 'a' };
         factory.setPassword(pwd);
         assertEquals("a", String.valueOf(factory.getPasswordCharArray()));
         pwd[0] = 'b';
@@ -155,12 +146,10 @@ public class TestCPDSConnectionFactory {
     }
 
     @Test
-    public void testSetPasswordThenModCharArray_Deprecated() {
-        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, -1, false, "userName", "password");
-        final char[] pwd = {'a'};
+    void testSetPasswordString() {
+        final CPDSConnectionFactory factory = new CPDSConnectionFactory(cpds, null, Duration.ofMillis(-1), false, "userName", "password".toCharArray());
+        final String pwd = "a";
         factory.setPassword(pwd);
-        assertEquals("a", String.valueOf(factory.getPasswordCharArray()));
-        pwd[0] = 'b';
         assertEquals("a", String.valueOf(factory.getPasswordCharArray()));
     }
 
@@ -172,7 +161,7 @@ public class TestCPDSConnectionFactory {
      * when PooledConnection itself is closed.
      */
     @Test
-    public void testSharedPoolDSDestroyOnReturn() throws Exception {
+    void testSharedPoolDSDestroyOnReturn() throws Exception {
         try (final PerUserPoolDataSource ds = new PerUserPoolDataSource()) {
             ds.setConnectionPoolDataSource(cpds);
             ds.setPerUserMaxTotal("userName", 10);

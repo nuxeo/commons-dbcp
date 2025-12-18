@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -153,7 +153,7 @@ public class TestBasicDataSourceFactory {
     }
 
     @Test
-    public void testAllProperties() throws Exception {
+    void testAllProperties() throws Exception {
         try {
             StackMessageLog.lock();
             StackMessageLog.clear();
@@ -176,7 +176,7 @@ public class TestBasicDataSourceFactory {
     }
 
     @Test
-    public void testNoProperties() throws Exception {
+    void testNoProperties() throws Exception {
         final Properties properties = new Properties();
         try (final BasicDataSource ds = BasicDataSourceFactory.createDataSource(properties)) {
             assertNotNull(ds);
@@ -184,14 +184,14 @@ public class TestBasicDataSourceFactory {
     }
 
     @Test
-    public void testProperties() throws Exception {
+    void testProperties() throws Exception {
         try (final BasicDataSource ds = BasicDataSourceFactory.createDataSource(getTestProperties())) {
             checkDataSourceProperties(ds);
         }
     }
 
     @Test
-    public void testValidateProperties() throws Exception {
+    void testValidateProperties() throws Exception {
         try {
             StackMessageLog.lock();
             StackMessageLog.clear();
